@@ -51,9 +51,49 @@ namespace Poxls.Format
             MetaData = metaData;
         }
 
-        public void Read(string path, IProgress<string> progressHandler)
+        public async Task Read(string path, IProgress<string> progressHandler)
         {
-            // TODO
+            progressHandler.Report("Starting reading *.XLSX file...");
+            progressHandler.Report("Path: " + path);
+
+            Entries = new List<LocEntry>();
+            MetaData = new List<string>();
+
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read))
+            {
+                IWorkbook workbook = new XSSFWorkbook(stream);
+                ISheet entriesSheet = workbook.GetSheetAt(0);
+                ISheet metaSheet = workbook.GetSheetAt(1);
+
+                for (int i = 0; i <= metaSheet.LastRowNum; i++)
+                {
+                    IRow row = metaSheet.GetRow(i);
+                    MetaData.Add(row.GetCell(0).StringCellValue);
+                }
+
+                // First row is contans titles for colums
+                for (int i = 1; i <= entriesSheet.LastRowNum; i++)
+                {
+                    await Task.Run(() =>
+                    {
+                        var entry = new LocEntry();
+
+                        IRow row = entriesSheet.GetRow(i);
+
+                        entry.msgctxt = row.GetCell(0).StringCellValue;
+                        entry.msgid = row.GetCell(1).StringCellValue;
+                        entry.msgstr = row.GetCell(2).StringCellValue;
+                        entry.translatorComments = GetStringListFromText(row.GetCell(3).StringCellValue);
+                        entry.flags = GetStringListFromText(row.GetCell(4).StringCellValue);
+                        entry.comments = GetStringListFromText(row.GetCell(5).StringCellValue);
+                        entry.references = GetStringListFromText(row.GetCell(6).StringCellValue);
+
+                        Entries.Add(entry);
+
+                        progressHandler.Report(string.Format("Entry {0}/{1}", i, entriesSheet.LastRowNum));
+                    });                    
+                }
+            }
         }
 
         public void Write(string path, IProgress<string> progressHandler)
@@ -175,15 +215,20 @@ namespace Poxls.Format
             progressHandler.Report("File succesfuly created.");
         }
 
-        private string GetMergedStringList(List<string> list)
+        private static string GetMergedStringList(List<string> list, char separator = ',')
         {
             string mergedList = "";
             foreach (var v in list)
             {
-                mergedList += v + "|";
+                mergedList += v + separator;
             }
 
-            return mergedList.TrimEnd('|');
+            return mergedList.TrimEnd(separator);
+        }
+
+        private static List<string> GetStringListFromText(string text, char separator = ',')
+        {
+            return text.Split(separator).ToList();
         }
     }
 }

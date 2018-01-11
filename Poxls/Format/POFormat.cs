@@ -41,13 +41,13 @@ namespace Poxls.Format
             Entries = new List<LocEntry>();
         }
 
-        public POFormat(List<LocEntry> Entries, List<string> metaData)
+        public POFormat(List<LocEntry> entries, List<string> metaData)
         {
             Entries = entries;
             MetaData = metaData;
         }
 
-        public async void Read(string path, IProgress<string> progressHandler)
+        public async Task Read(string path, IProgress<string> progressHandler)
         {
             progressHandler.Report("Starting reading *.PO file...");
             progressHandler.Report("Path: " + path);
@@ -86,35 +86,39 @@ namespace Poxls.Format
                             continue;
                         }
 
-                        LocEntry currentEntry = Entries[Entries.Count - 1];
-                        
-                        string prefix = line.Substring(0, 3);
-
-                        switch (prefix)
+                        await Task.Run(() =>
                         {
-                            case "#. ":
-                                currentEntry.comments.Add(line.Substring(3));
-                                break;
-                            case "#  ":
-                                currentEntry.translatorComments.Add(line.Substring(3));
-                                break;
-                            case "#, ":
-                                currentEntry.flags = currentEntry.flags.Concat(line.Substring(3).Split(',')).ToList();
-                                break;
-                            case "#: ":
-                                currentEntry.references = currentEntry.references.Concat(line.Substring(3).Split(',')).ToList();
-                                break;
-                            case "msg":
+                            LocEntry currentEntry = Entries[Entries.Count - 1];
 
-                                if (line.IndexOf("msgctxt") == 0)
-                                    currentEntry.msgctxt = GetMsgValue(line);
-                                else if (line.IndexOf("msgid") == 0)
-                                    currentEntry.msgid = GetMsgValue(line);
-                                else if (line.IndexOf("msgstr") == 0)
-                                    currentEntry.msgstr = GetMsgValue(line);
+                            string prefix = line.Substring(0, 3);
 
-                                break;
-                        }
+                            switch (prefix)
+                            {
+                                case "#. ":
+                                    currentEntry.comments.Add(line.Substring(3));
+                                    break;
+                                case "#  ":
+                                    currentEntry.translatorComments.Add(line.Substring(3));
+                                    break;
+                                case "#, ":
+                                    currentEntry.flags = currentEntry.flags.Concat(line.Substring(3).Split(',')).ToList();
+                                    break;
+                                case "#: ":
+                                    currentEntry.references = currentEntry.references.Concat(line.Substring(3).Split(',')).ToList();
+                                    break;
+                                case "msg":
+
+                                    if (line.IndexOf("msgctxt") == 0)
+                                        currentEntry.msgctxt = GetMsgValue(line);
+                                    else if (line.IndexOf("msgid") == 0)
+                                        currentEntry.msgid = GetMsgValue(line);
+                                    else if (line.IndexOf("msgstr") == 0)
+                                        currentEntry.msgstr = GetMsgValue(line);
+
+                                    break;
+                            }
+                        });
+                        
                     }
 
                     progressHandler.Report("Number of entries: " + Entries.Count);
@@ -125,8 +129,6 @@ namespace Poxls.Format
                 throw e;
             }
 
-            var xls = new XLSFormat(Entries, MetaData);           
-            xls.Write(Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".xlsx", progressHandler);
         }
        
         public void Write(string path, IProgress<string> progressHandler)
@@ -153,7 +155,8 @@ namespace Poxls.Format
                     // Translator comments
                     foreach (var comment in entry.translatorComments)
                     {
-                        writer.WriteLine("#  " + comment);
+                        if(!string.IsNullOrWhiteSpace(comment))
+                            writer.WriteLine("#  " + comment);
                     }
 
                     // Flags
@@ -162,10 +165,12 @@ namespace Poxls.Format
                         var line = "#, ";
                         foreach (var flag in entry.flags)
                         {
-                            line += flag + ",";
+                            if (!string.IsNullOrWhiteSpace(flag))
+                                line += flag + ",";
                         }
 
-                        writer.WriteLine(line.TrimEnd(','));
+                        if (!string.IsNullOrWhiteSpace(line.Substring(0, 3)))
+                            writer.WriteLine(line.TrimEnd(','));
                     }
 
                     // References
@@ -177,7 +182,8 @@ namespace Poxls.Format
                             line += reference + ",";
                         }
 
-                        writer.WriteLine(line.TrimEnd(','));
+                        if (!string.IsNullOrWhiteSpace(line.TrimEnd(',').Substring(0, 3)))
+                            writer.WriteLine(line.TrimEnd(','));
                     }
 
                     writer.WriteLine(GetMsgLine("msgctxt", entry.msgctxt));

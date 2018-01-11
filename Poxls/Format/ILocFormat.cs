@@ -11,7 +11,7 @@ namespace Poxls.Format
         List<string> MetaData { get; }
         List<LocEntry> Entries { get; }
 
-        void Read(string path, IProgress<string> progressHandler);
+        Task Read(string path, IProgress<string> progressHandler);
         void Write(string path, IProgress<string> progressHandler);
     }
 }

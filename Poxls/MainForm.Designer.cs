@@ -45,7 +45,6 @@
             // 
             // XLSToPOButton
             // 
-            this.XLSToPOButton.Enabled = false;
             this.XLSToPOButton.Location = new System.Drawing.Point(93, 12);
             this.XLSToPOButton.Name = "XLSToPOButton";
             this.XLSToPOButton.Size = new System.Drawing.Size(75, 23);
