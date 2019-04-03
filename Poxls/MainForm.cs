@@ -40,10 +40,19 @@ namespace Poxls
             }
         }
 
-        private async void POToXLSButton_Click(object sender, EventArgs e)
+        private async void convertFileButton_Click(object sender, EventArgs e)
         {
             var dialog = new System.Windows.Forms.OpenFileDialog();
-            dialog.Filter = "PO Files|*.po";
+
+            if (conversionType.SelectedIndex == 0) //PO
+            {
+                dialog.Filter = "PO Files|*.po";
+            }
+            else
+            {
+                dialog.Filter = "Excel Files|*.xlsx";
+            }
+            
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 var progressHandler = new Progress<string>(value =>
@@ -62,5 +71,9 @@ namespace Poxls
             }
         }
 
+        private void convertDirectoryButton_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

@@ -8,6 +8,7 @@ namespace Poxls.Format
 {
     interface ILocFormat
     {
+        int LocFormatID { get; }
         List<string> MetaData { get; }
         List<LocEntry> Entries { get; }
 

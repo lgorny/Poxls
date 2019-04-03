@@ -10,6 +10,11 @@ namespace Poxls.Format
 {
     class POFormat : ILocFormat
     {
+        public int LocFormatID
+        {
+            get { return 0; }
+        }
+
         private List<string> metaData;
         public List<string> MetaData
         {
